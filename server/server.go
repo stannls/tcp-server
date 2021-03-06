@@ -4,15 +4,15 @@ import (
 	"github.com/google/uuid"
 	"log"
 	"net"
-	"org.ydsh.tcpserver/client"
 	"sort"
 	"strconv"
+	"tcpserver/client"
 )
 
 type Server struct {
 	Port       int
 	MaxPlayers int
-	Clients []*client.Client
+	Clients    []*client.Client
 }
 
 func (server *Server) Start() {
@@ -43,7 +43,7 @@ func (server *Server) handleConnection(c net.Conn) {
 	client.SendMessage(&welcome)
 	for {
 		message, err := client.ReceiveMessage()
-		if err!= nil{
+		if err != nil {
 			log.Printf("Client with adress %s disconnected\n", client.Connection.RemoteAddr().String())
 			break
 		}
@@ -55,11 +55,11 @@ func (server *Server) handleConnection(c net.Conn) {
 
 func (server *Server) RemoveClient(client *client.Client) {
 	i := sort.Search(len(server.Clients), func(i int) bool {
-	return server.Clients[i] == client
+		return server.Clients[i] == client
 	})
 	if len(server.Clients) > 1 {
 		server.Clients = append(server.Clients[:i], server.Clients[i+1:]...)
-	}  else {
+	} else {
 		server.Clients = nil
 	}
 }

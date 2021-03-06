@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"org.ydsh.tcpserver/client"
-	"org.ydsh.tcpserver/server"
 	"os"
+	"tcpserver/client"
+	"tcpserver/server"
 )
 
 func main() {
@@ -16,7 +16,7 @@ func main() {
 	s := server.Server{
 		Port:       8000,
 		MaxPlayers: 100,
-		Clients: []*client.Client{},
+		Clients:    []*client.Client{},
 	}
 	s.Start()
 }
