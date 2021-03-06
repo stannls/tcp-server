@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
+	"strconv"
 	"tcpserver/client"
 	"tcpserver/server"
 )
@@ -10,11 +11,15 @@ import (
 func main() {
 	arguments := os.Args
 	if len(arguments) == 1 {
-		fmt.Println("Please provide a port number!")
+		log.Fatal("Please provide a port number!")
 		return
 	}
+	port, err := strconv.Atoi(arguments[1])
+	if err != nil {
+		log.Panic("Invalid Port number")
+	}
 	s := server.Server{
-		Port:       8000,
+		Port:       port,
 		MaxPlayers: 100,
 		Clients:    []*client.Client{},
 	}

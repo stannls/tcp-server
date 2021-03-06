@@ -30,12 +30,16 @@ func (server *Server) Start() {
 			log.Fatal(err)
 			return
 		}
-		go server.handleConnection(c)
+		if len(server.Clients) == server.MaxPlayers{
+			c.Write([]byte("Server full\n"))
+			c.Close()
+		} else {
+			go server.handleConnection(c)
+		}
 	}
 }
 
 func (server *Server) handleConnection(c net.Conn) {
-
 	log.Printf("Accepting connection from %s\n", c.RemoteAddr().String())
 	client := client.Client{Connection: c, Id: uuid.New().String()}
 	server.Clients = append(server.Clients, &client)
