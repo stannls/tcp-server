@@ -1,16 +1,18 @@
 package server
 
 import (
-	"bufio"
+	"github.com/google/uuid"
 	"log"
 	"net"
+	"org.ydsh.tcpserver/client"
+	"sort"
 	"strconv"
-	"strings"
 )
 
 type Server struct {
 	Port       int
 	MaxPlayers int
+	Clients []*client.Client
 }
 
 func (server *Server) Start() {
@@ -35,21 +37,29 @@ func (server *Server) Start() {
 func (server *Server) handleConnection(c net.Conn) {
 
 	log.Printf("Accepting connection from %s\n", c.RemoteAddr().String())
+	client := client.Client{Connection: c, Id: uuid.New().String()}
+	server.Clients = append(server.Clients, &client)
+	var welcome = "Hello Client\n"
+	client.SendMessage(&welcome)
 	for {
-		netData, err := bufio.NewReader(c).ReadString('\n')
-		if err != nil && err.Error() == "EOF" {
-			log.Printf("Client with adress %s disconnected\n", c.RemoteAddr().String())
-			return
-		}
-
-		temp := strings.TrimSpace(string(netData))
-		if temp == "STOP" {
+		message, err := client.ReceiveMessage()
+		if err!= nil{
+			log.Printf("Client with adress %s disconnected\n", client.Connection.RemoteAddr().String())
 			break
 		}
-
-		result := "Hello Client\n"
-		c.Write([]byte(string(result)))
+		log.Printf("Client wrote %s", message)
 	}
-	log.Printf("Closing connection from %s\n", c.RemoteAddr().String())
-	c.Close()
+	client.Disconnect()
+	server.RemoveClient(&client)
+}
+
+func (server *Server) RemoveClient(client *client.Client) {
+	i := sort.Search(len(server.Clients), func(i int) bool {
+	return server.Clients[i] == client
+	})
+	if len(server.Clients) > 1 {
+		server.Clients = append(server.Clients[:i], server.Clients[i+1:]...)
+	}  else {
+		server.Clients = nil
+	}
 }
