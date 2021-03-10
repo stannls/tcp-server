@@ -4,9 +4,9 @@ import (
 	"github.com/google/uuid"
 	"log"
 	"net"
-	"sort"
 	"strconv"
 	"tcpserver/client"
+	"tcpserver/events"
 )
 
 type Server struct {
@@ -30,7 +30,7 @@ func (server *Server) Start() {
 			log.Fatal(err)
 			return
 		}
-		if len(server.Clients) == server.MaxPlayers{
+		if len(server.Clients) == server.MaxPlayers {
 			c.Write([]byte("Server full\n"))
 			c.Close()
 		} else {
@@ -43,8 +43,7 @@ func (server *Server) handleConnection(c net.Conn) {
 	log.Printf("Accepting connection from %s\n", c.RemoteAddr().String())
 	client := client.Client{Connection: c, Id: uuid.New().String()}
 	server.Clients = append(server.Clients, &client)
-	var welcome = "Hello Client\n"
-	client.SendMessage(&welcome)
+	server.Broadcast(events.SpawnEvent{PlayerId: client.Id}.ToJson(), client.Id)
 	for {
 		message, err := client.ReceiveMessage()
 		if err != nil {
@@ -55,15 +54,28 @@ func (server *Server) handleConnection(c net.Conn) {
 	}
 	client.Disconnect()
 	server.RemoveClient(&client)
+	server.Broadcast(events.DisconnectEvent{PlayerId: client.Id}.ToJson(), client.Id)
 }
 
 func (server *Server) RemoveClient(client *client.Client) {
-	i := sort.Search(len(server.Clients), func(i int) bool {
-		return server.Clients[i] == client
-	})
+	var position int = 0
+	for i, c := range server.Clients {
+		if c.Id == client.Id {
+			position = i
+			break
+		}
+	}
 	if len(server.Clients) > 1 {
-		server.Clients = append(server.Clients[:i], server.Clients[i+1:]...)
+		server.Clients = append(server.Clients[:position], server.Clients[position+1:]...)
 	} else {
 		server.Clients = nil
+	}
+}
+
+func (server *Server) Broadcast(data string, sender string) {
+	for _, c := range server.Clients {
+		if c.Id != sender {
+			_, _ = c.Connection.Write([]byte(data))
+		}
 	}
 }
